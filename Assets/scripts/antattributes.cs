@@ -7,8 +7,9 @@ public class antattributes : MonoBehaviour
     [Header("Ant Attributes")]
     public int strength;
     public int looks;
-    public string gender = "Male";
+    public string gender = "Male"; // "Male" or "Female"
     public string mood;
+    public string antName;
 
     [Header("Hunger Settings")]
     [SerializeField] public float hunger = 0f;
@@ -31,6 +32,16 @@ public class antattributes : MonoBehaviour
 
     [Header("UI")]
     public TextMeshProUGUI hungerText;
+    public TextMeshProUGUI nameText;
+
+    [Header("Mating Settings")]
+    public Transform finalBurrow;           // Final burrow Transform found by tag "finalburrow"
+    public GameObject heartEffectPrefab;    // Visual effect instantiated on arrival
+    public GameObject[] babyAntPrefabs;       // Array of 4 baby ant prefabs
+    public bool isMating = false;
+    public bool reachedBurrow = false;
+    public antattributes mate = null;
+    public static bool burrowInUse = false; // Ensures only one mating pair uses the burrow at once
 
     private float moveSpeed;
     private Vector2 moveDirection;
@@ -38,7 +49,7 @@ public class antattributes : MonoBehaviour
     private float directionTimer;
     private GameObject targetSugar;
 
-    // 🟡 Burrow Behavior
+    // 🟡 Regular burrow roaming behavior
     private GameObject nearestBurrow = null;
     public float roamRadius = 1f;
     private Vector2 roamTarget;
@@ -47,53 +58,147 @@ public class antattributes : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         RandomizeAttributes();
-        moveSpeed = baseSpeed * (0.4f + 0.6f * (strength / 100f)); // ✅ Boosted low-end speed
+        // Boost low-end speed relative to strength.
+        moveSpeed = baseSpeed * (0.4f + 0.6f * (strength / 100f));
         UpdateMood();
         PickNewDirection();
+        UpdateNameUI();
+
+        // Find the final burrow by tag if not assigned.
+        if (finalBurrow == null)
+        {
+            GameObject fb = GameObject.FindGameObjectWithTag("finalburrow");
+            if (fb != null)
+            {
+                finalBurrow = fb.transform;
+            }
+        }
     }
 
     void Update()
     {
         directionTimer -= Time.deltaTime;
-
         IncreaseHungerOverTime();
         UpdateMood();
         UpdateHungerUI();
         DetectSugarNearby();
 
-        // 🟡 Look for burrow
-        if (nearestBurrow == null)
+        // --- Mating Behavior ---
+        if (finalBurrow != null && !burrowInUse)
         {
-            GameObject[] burrows = GameObject.FindGameObjectsWithTag("placedburrow");
-            if (burrows.Length > 0)
+            // Female ants find the best male in range.
+            if (gender == "Female" && !isMating)
             {
-                float minDist = Mathf.Infinity;
-                foreach (GameObject b in burrows)
+                Collider2D[] nearby = Physics2D.OverlapCircleAll(transform.position, attractionDistance);
+                antattributes bestMale = null;
+                float bestLooks = -1f;
+                foreach (Collider2D col in nearby)
                 {
-                    float d = Vector2.Distance(transform.position, b.transform.position);
-                    if (d < minDist)
+                    if (col.gameObject == this.gameObject) continue;
+                    antattributes other = col.GetComponent<antattributes>();
+                    if (other != null && other.gender == "Male" && !other.isMating)
                     {
-                        minDist = d;
-                        nearestBurrow = b;
+                        if (other.looks > bestLooks)
+                        {
+                            bestLooks = other.looks;
+                            bestMale = other;
+                        }
                     }
                 }
-
-                if (nearestBurrow != null)
+                if (bestMale != null)
                 {
-                    roamTarget = GetRandomRoamPoint();
+                    // Begin mating: assign each other as mates and mark the burrow as in use.
+                    isMating = true;
+                    mate = bestMale;
+                    bestMale.isMating = true;
+                    bestMale.mate = this;
+                    burrowInUse = true;
                 }
             }
         }
+        // --- End Mating Behavior ---
 
-        if (nearestBurrow != null && directionTimer <= 0f && targetSugar == null)
+        // --- Regular Behavior (Roaming, Sugar, etc.) ---
+        if (!isMating)
         {
-            roamTarget = GetRandomRoamPoint();
-            directionTimer = Random.Range(directionChangeInterval * 0.5f, directionChangeInterval * 1.5f);
+            if (nearestBurrow == null)
+            {
+                GameObject[] burrows = GameObject.FindGameObjectsWithTag("placedburrow");
+                if (burrows.Length > 0)
+                {
+                    float minDist = Mathf.Infinity;
+                    foreach (GameObject b in burrows)
+                    {
+                        float d = Vector2.Distance(transform.position, b.transform.position);
+                        if (d < minDist)
+                        {
+                            minDist = d;
+                            nearestBurrow = b;
+                        }
+                    }
+                    if (nearestBurrow != null)
+                    {
+                        roamTarget = GetRandomRoamPoint();
+                    }
+                }
+            }
+
+            if (nearestBurrow != null && directionTimer <= 0f && targetSugar == null)
+            {
+                roamTarget = GetRandomRoamPoint();
+                directionTimer = Random.Range(directionChangeInterval * 0.5f, directionChangeInterval * 1.5f);
+            }
         }
+        // --- End Regular Behavior ---
     }
 
     void FixedUpdate()
     {
+        // --- Mating Movement ---
+        if (isMating && finalBurrow != null)
+        {
+            // Both ants move toward the final burrow.
+            Vector2 dir = ((Vector2)finalBurrow.position - rb.position).normalized;
+            rb.velocity = dir * moveSpeed;
+
+            // Check if this ant has reached the burrow.
+            if (Vector2.Distance(transform.position, finalBurrow.position) < 0.2f)
+            {
+                reachedBurrow = true;
+                rb.velocity = Vector2.zero;
+            }
+
+            // If both mates have reached, instantiate the heart effect and baby ants.
+            if (mate != null && reachedBurrow && mate.reachedBurrow)
+            {
+                if (heartEffectPrefab != null)
+                {
+                    GameObject fx = Instantiate(heartEffectPrefab, finalBurrow.position, Quaternion.identity);
+                    Destroy(fx, 2f);
+                }
+
+                if (babyAntPrefabs != null)
+                {
+                    foreach (GameObject baby in babyAntPrefabs)
+                    {
+                        Vector3 spawnPos = finalBurrow.position + (Vector3)Random.insideUnitCircle * 0.3f;
+                        Instantiate(baby, spawnPos, Quaternion.identity);
+                    }
+                }
+
+                // Reset mating state for both ants.
+                isMating = false;
+                reachedBurrow = false;
+                mate.isMating = false;
+                mate.reachedBurrow = false;
+                mate.mate = null;
+                mate = null;
+                burrowInUse = false;
+            }
+            return; // Skip normal movement while mating.
+        }
+
+        // --- Regular Movement ---
         Vector2 finalMoveDir;
         float currentSpeed = moveSpeed;
 
@@ -108,19 +213,18 @@ public class antattributes : MonoBehaviour
             {
                 Destroy(targetSugar);
                 hunger = Mathf.Max(0f, hunger - hungerReductionOnSugar);
+                looks += Random.Range(1, 4); // Increase looks when sugar is eaten
                 targetSugar = null;
                 PickNewDirection();
             }
         }
         else if (nearestBurrow != null)
         {
-            // 🟡 Roam near the burrow
             Vector2 toRoamTarget = (roamTarget - rb.position);
             if (toRoamTarget.magnitude < 0.2f)
             {
                 roamTarget = GetRandomRoamPoint();
             }
-
             finalMoveDir = toRoamTarget.normalized;
         }
         else
@@ -162,7 +266,6 @@ public class antattributes : MonoBehaviour
                 }
             }
         }
-
         return avoidance * avoidanceForce;
     }
 
@@ -171,12 +274,17 @@ public class antattributes : MonoBehaviour
         strength = Random.Range(1, 101);
         looks = Random.Range(1, 101);
         hunger = 0f;
-    }
 
-    void IncreaseHungerOverTime()
-    {
-        hunger += hungerIncreaseRate * Time.deltaTime;
-        hunger = Mathf.Clamp(hunger, 0f, maxHunger);
+        string[] goofyNames = new string[]
+        {
+            "Crumbthief", "Legz McGee", "Sir Scurriersworth", "Wigglebum", "Dirt Snacker",
+            "Chonk Mandible", "Buzzfoot", "Skitterman", "Toastercrumb", "Ziggy Zoom",
+            "Grainzilla", "Nibbles Jr.", "Captain Crawly", "Antony Stark", "Bitey McByteface",
+            "Cheezlegs", "Gobbles", "Lord Tunneltrot", "Peanut Wiggler", "Sir Crunch",
+            "blastipede", "husky", "charvi"
+        };
+
+        antName = goofyNames[Random.Range(0, goofyNames.Length)];
     }
 
     void UpdateMood()
@@ -203,6 +311,14 @@ public class antattributes : MonoBehaviour
         }
     }
 
+    void UpdateNameUI()
+    {
+        if (nameText != null)
+        {
+            nameText.text = "Name: " + antName;
+        }
+    }
+
     void DetectSugarNearby()
     {
         if (targetSugar != null) return;
@@ -220,7 +336,6 @@ public class antattributes : MonoBehaviour
                 closest = sugar;
             }
         }
-
         if (closest != null)
         {
             targetSugar = closest;
@@ -235,6 +350,12 @@ public class antattributes : MonoBehaviour
         float angle = Random.Range(0f, Mathf.PI * 2f);
         float radius = Random.Range(0.2f, roamRadius);
         return center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+    }
+
+    void IncreaseHungerOverTime()
+    {
+        hunger += hungerIncreaseRate * Time.deltaTime;
+        hunger = Mathf.Clamp(hunger, 0f, maxHunger);
     }
 
     void OnDrawGizmosSelected()

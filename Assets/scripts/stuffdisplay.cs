@@ -7,6 +7,7 @@ public class stuffdisplay : MonoBehaviour
     public TextMeshProUGUI strengthText;
     public TextMeshProUGUI looksText;
     public TextMeshProUGUI moodText;
+    public TextMeshProUGUI nameText;
 
     private antattributes currentAnt;
 
@@ -35,7 +36,6 @@ public class stuffdisplay : MonoBehaviour
             }
         }
 
-        // If nothing is hit or no ant under cursor
         if (currentAnt != null)
         {
             currentAnt = null;
@@ -45,10 +45,11 @@ public class stuffdisplay : MonoBehaviour
 
     void UpdateUI(antattributes ant)
     {
-        if (hungerText) hungerText.text = "Hunger: " + ant.hunger;
+        if (hungerText) hungerText.text = "Hunger: " + Mathf.RoundToInt(ant.hunger);
         if (strengthText) strengthText.text = "Strength: " + ant.strength;
-        if (looksText) looksText.text = "sweetness: " + ant.looks;
+        if (looksText) looksText.text = "Sweetness: " + ant.looks;
         if (moodText) moodText.text = "Mood: " + ant.mood;
+        if (nameText) nameText.text = "Name: " + ant.antName;
     }
 
     void ShowUI()
@@ -57,6 +58,7 @@ public class stuffdisplay : MonoBehaviour
         if (strengthText) strengthText.gameObject.SetActive(true);
         if (looksText) looksText.gameObject.SetActive(true);
         if (moodText) moodText.gameObject.SetActive(true);
+        if (nameText) nameText.gameObject.SetActive(true);
     }
 
     void HideUI()
@@ -65,5 +67,6 @@ public class stuffdisplay : MonoBehaviour
         if (strengthText) strengthText.gameObject.SetActive(false);
         if (looksText) looksText.gameObject.SetActive(false);
         if (moodText) moodText.gameObject.SetActive(false);
+        if (nameText) nameText.gameObject.SetActive(false);
     }
 }
