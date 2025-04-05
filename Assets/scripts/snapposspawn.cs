@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 public class snapposspawn : MonoBehaviour
@@ -25,13 +25,17 @@ public class snapposspawn : MonoBehaviour
                 if (currentSnapPoint != null && !currentSnapPoint.isOccupied)
                 {
                     currentSnapPoint.isOccupied = true;
+
+                    // 🟢 Change tag to "placedburrow"
+                    currentObject.tag = "placedburrow";
+
                     isPlaced = true;
                     currentObject = null;
                     currentSnapPoint = null;
                 }
             }
 
-            if (Input.GetMouseButtonDown(1)) // Optional cancel
+            if (Input.GetMouseButtonDown(1)) // Right-click to cancel
             {
                 Destroy(currentObject);
                 currentObject = null;

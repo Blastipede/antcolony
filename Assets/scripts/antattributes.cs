@@ -7,12 +7,12 @@ public class antattributes : MonoBehaviour
     [Header("Ant Attributes")]
     public int strength;
     public int looks;
-    public string gender = "Male"; // Set manually
+    public string gender = "Male";
     public string mood;
 
     [Header("Hunger Settings")]
-    [SerializeField] public float hunger = 0f; // Starts at 0
-    public float hungerIncreaseRate = 2f; // Units per second
+    [SerializeField] public float hunger = 0f;
+    public float hungerIncreaseRate = 2f;
     private const float maxHunger = 100f;
 
     [Header("Movement Settings")]
@@ -32,20 +32,22 @@ public class antattributes : MonoBehaviour
     [Header("UI")]
     public TextMeshProUGUI hungerText;
 
-    [Header("Death Settings")]
-    public GameObject deadAntPrefab; // Assign in Inspector
-
     private float moveSpeed;
     private Vector2 moveDirection;
     private Rigidbody2D rb;
     private float directionTimer;
     private GameObject targetSugar;
 
+    // 🟡 Burrow Behavior
+    private GameObject nearestBurrow = null;
+    public float roamRadius = 1f;
+    private Vector2 roamTarget;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         RandomizeAttributes();
-        moveSpeed = baseSpeed * (strength / 100f);
+        moveSpeed = baseSpeed * (0.4f + 0.6f * (strength / 100f)); // ✅ Boosted low-end speed
         UpdateMood();
         PickNewDirection();
     }
@@ -53,28 +55,45 @@ public class antattributes : MonoBehaviour
     void Update()
     {
         directionTimer -= Time.deltaTime;
-        if (directionTimer <= 0f && targetSugar == null)
-        {
-            PickNewDirection();
-            directionTimer = Random.Range(directionChangeInterval * 0.5f, directionChangeInterval * 1.5f);
-        }
 
         IncreaseHungerOverTime();
         UpdateMood();
         UpdateHungerUI();
         DetectSugarNearby();
 
-        // 🔥 Check if hunger is maxed
-        if (hunger >= maxHunger)
+        // 🟡 Look for burrow
+        if (nearestBurrow == null)
         {
-            Die();
+            GameObject[] burrows = GameObject.FindGameObjectsWithTag("placedburrow");
+            if (burrows.Length > 0)
+            {
+                float minDist = Mathf.Infinity;
+                foreach (GameObject b in burrows)
+                {
+                    float d = Vector2.Distance(transform.position, b.transform.position);
+                    if (d < minDist)
+                    {
+                        minDist = d;
+                        nearestBurrow = b;
+                    }
+                }
+
+                if (nearestBurrow != null)
+                {
+                    roamTarget = GetRandomRoamPoint();
+                }
+            }
+        }
+
+        if (nearestBurrow != null && directionTimer <= 0f && targetSugar == null)
+        {
+            roamTarget = GetRandomRoamPoint();
+            directionTimer = Random.Range(directionChangeInterval * 0.5f, directionChangeInterval * 1.5f);
         }
     }
 
     void FixedUpdate()
     {
-        if (hunger >= maxHunger) return;
-
         Vector2 finalMoveDir;
         float currentSpeed = moveSpeed;
 
@@ -92,6 +111,17 @@ public class antattributes : MonoBehaviour
                 targetSugar = null;
                 PickNewDirection();
             }
+        }
+        else if (nearestBurrow != null)
+        {
+            // 🟡 Roam near the burrow
+            Vector2 toRoamTarget = (roamTarget - rb.position);
+            if (toRoamTarget.magnitude < 0.2f)
+            {
+                roamTarget = GetRandomRoamPoint();
+            }
+
+            finalMoveDir = toRoamTarget.normalized;
         }
         else
         {
@@ -140,7 +170,7 @@ public class antattributes : MonoBehaviour
     {
         strength = Random.Range(1, 101);
         looks = Random.Range(1, 101);
-        hunger = 0f; // Starts at 0
+        hunger = 0f;
     }
 
     void IncreaseHungerOverTime()
@@ -178,7 +208,6 @@ public class antattributes : MonoBehaviour
         if (targetSugar != null) return;
 
         GameObject[] allSugar = GameObject.FindGameObjectsWithTag("Sugar");
-
         float closestDist = attractionDistance;
         GameObject closest = null;
 
@@ -198,15 +227,14 @@ public class antattributes : MonoBehaviour
         }
     }
 
-    void Die()
+    Vector2 GetRandomRoamPoint()
     {
-        if (deadAntPrefab != null)
-        {
-            GameObject deadAnt = Instantiate(deadAntPrefab, transform.position, Quaternion.identity);
-            Destroy(deadAnt, 30f); // Destroy after 30 seconds
-        }
+        if (nearestBurrow == null) return transform.position;
 
-        Destroy(gameObject);
+        Vector2 center = nearestBurrow.transform.position;
+        float angle = Random.Range(0f, Mathf.PI * 2f);
+        float radius = Random.Range(0.2f, roamRadius);
+        return center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
     }
 
     void OnDrawGizmosSelected()
@@ -215,5 +243,11 @@ public class antattributes : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, attractionDistance);
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, avoidanceRadius);
+
+        if (nearestBurrow != null)
+        {
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(nearestBurrow.transform.position, roamRadius);
+        }
     }
 }
