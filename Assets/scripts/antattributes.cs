@@ -48,6 +48,7 @@ public class antattributes : MonoBehaviour
     private Rigidbody2D rb;
     private float directionTimer;
     private GameObject targetSugar;
+    public GameObject deadAntPrefab;
 
     // 🟡 Regular burrow roaming behavior
     private GameObject nearestBurrow = null;
@@ -77,6 +78,10 @@ public class antattributes : MonoBehaviour
 
     void Update()
     {
+        if (hunger >= 100f)
+        {
+            DieFromHunger();
+        }
         directionTimer -= Time.deltaTime;
         IncreaseHungerOverTime();
         UpdateMood();
@@ -150,6 +155,17 @@ public class antattributes : MonoBehaviour
             }
         }
         // --- End Regular Behavior ---
+        void DieFromHunger()
+        {
+            // Spawn dead ant at the same position and rotation
+            if (deadAntPrefab != null)
+            {
+                Instantiate(deadAntPrefab, transform.position, transform.rotation);
+            }
+
+            // Disable the current ant GameObject
+            gameObject.SetActive(false);
+        }
     }
 
     void FixedUpdate()
