@@ -1,7 +1,7 @@
 ![title](https://github.com/user-attachments/assets/935645a8-6b40-4b64-8d97-25dba4eb57a9)
 
 
-A hand-crafted 2D narrative strategy game where you manage a thriving ant colony — harvesting sugar. Inspired by a Classic fable.
+Shakar Colony is a cozy indie simulation game developed from scratch during a hackathon. It features AI-driven ants whose behaviors are influenced by mood and sweetness, shaped by their interaction with sugar (shakar). Ants use burrows to multiply and form growing colonies with emergent, lifelike behavior.  All systems—from movement to decision-making—are custom-built without external AI libraries. Simple mechanics lead to complex outcomes like trail-building, resource gathering, and adaptive reactions.  Shakar Colony is being developed as a cozy idle game for Steam, offering players a relaxing experience of managing and observing a living, evolving ant colony. simulation of ai made ants(made from scratch during the hackathon period) and how  sugar(shakar effects there lives) ant  colonies use ant burrows to multiplly and sugar to manage mood and sweetness which are attributes which affect there in enviornment behaviour ,actions and reactions.
 
 ---
 
