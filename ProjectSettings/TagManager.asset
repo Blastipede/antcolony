@@ -14,6 +14,7 @@ TagManager:
   - placedburrow
   - sugarcano
   - babyants
+  - anthill
   layers:
   - Default
   - TransparentFX
