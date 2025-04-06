@@ -1,4 +1,5 @@
-![title](https://github.com/user-attachments/assets/742fb5fb-e7d1-4246-82f1-42fa7d78397a)
+![title](https://github.com/user-attachments/assets/935645a8-6b40-4b64-8d97-25dba4eb57a9)
+
 
 A hand-crafted 2D narrative strategy game where you manage a thriving ant colony — harvesting sugar. Inspired by a Classic fable.
 
@@ -27,11 +28,12 @@ A hand-crafted 2D narrative strategy game where you manage a thriving ant colony
 
 ## 📸 Preview
 
-![image](https://github.com/user-attachments/assets/193a9fb6-29e2-4a47-af4b-2be68362e236)
-![image3](https://github.com/user-attachments/assets/8b1e601f-f154-417a-a7a2-40b60862a56f)
-![image2](https://github.com/user-attachments/assets/97e376b6-7812-4125-a4ce-dae5d309c40b)
+![ant1](https://github.com/user-attachments/assets/b6b104f9-4666-4a31-88f2-410f3872dbfc)
+![ant2](https://github.com/user-attachments/assets/c5f69091-2101-42be-a4b3-2269400347e7)
+![ant3](https://github.com/user-attachments/assets/1c416356-47df-45d2-97d0-55e1d2a12d18)
 
 ---
+
 
 ## 🧾 Instructions
 
